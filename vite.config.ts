@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@securedocs_assets': path.resolve(__dirname, './securedocs_assets'),
     },
   },
 });

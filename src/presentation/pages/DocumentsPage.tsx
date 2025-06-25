@@ -1,70 +1,86 @@
-import { useState, useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
-import { Upload, X, AlertCircle } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, X, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 
-import { DocumentsDataTable } from '../components/DocumentsDataTable'
-import { useDocuments } from '../../application/hooks/useDocuments'
-
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+import { MAX_FILE_SIZE } from '@/shared/constants';
+import { DocumentsDataTable } from '../components/DocumentsDataTable';
+import { useDocuments } from '@/application/hooks/useDocuments';
 
 interface UploadFile {
-  file: File
-  progress: number
-  status: 'pending' | 'uploading' | 'completed' | 'error'
-  error?: string
+  file: File;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
 }
 
 export function DocumentsPage() {
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
-  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
-  const { uploadDocument, isUploadingDocument } = useDocuments()
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const { uploadDocument, isUploadingDocument } = useDocuments();
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: Array<{ file: File; errors: Array<{ code: string; message: string }> }>) => {
-    // Handle rejected files
-    rejectedFiles.forEach(({ file, errors }) => {
-      errors.forEach((error) => {
-        if (error.code === 'file-too-large') {
-          toast.error(`${file.name} is too large. Max size is 10MB.`)
-        } else if (error.code === 'file-invalid-type') {
-          toast.error(`${file.name} is not a supported file type.`)
-        } else {
-          toast.error(`Error with ${file.name}: ${error.message}`)
-        }
-      })
-    })
+  const onDrop = useCallback(
+    (
+      acceptedFiles: File[],
+      rejectedFiles: Array<{
+        file: File;
+        errors: Array<{ code: string; message: string }>;
+      }>
+    ) => {
+      // Handle rejected files
+      rejectedFiles.forEach(({ file, errors }) => {
+        errors.forEach(error => {
+          if (error.code === 'file-too-large') {
+            toast.error(`${file.name} is too large. Max size is 10MB.`);
+          } else if (error.code === 'file-invalid-type') {
+            toast.error(`${file.name} is not a supported file type.`);
+          } else {
+            toast.error(`Error with ${file.name}: ${error.message}`);
+          }
+        });
+      });
 
-    // Handle accepted files
-    const newFiles: UploadFile[] = acceptedFiles.map(file => ({
-      file,
-      progress: 0,
-      status: 'pending' as const,
-    }))
+      // Handle accepted files
+      const newFiles: UploadFile[] = acceptedFiles.map(file => ({
+        file,
+        progress: 0,
+        status: 'pending' as const,
+      }));
 
-    setUploadFiles(prev => [...prev, ...newFiles])
-  }, [])
+      setUploadFiles(prev => [...prev, ...newFiles]);
+    },
+    []
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
       'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+        '.xlsx',
+      ],
       'text/plain': ['.txt'],
       'text/csv': ['.csv'],
       'image/jpeg': ['.jpg', '.jpeg'],
@@ -74,104 +90,111 @@ export function DocumentsPage() {
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
-  })
+  });
 
   const uploadFile = async (uploadFile: UploadFile, index: number) => {
-    setUploadFiles(prev => 
-      prev.map((f, i) => 
+    setUploadFiles(prev =>
+      prev.map((f, i) =>
         i === index ? { ...f, status: 'uploading' as const } : f
       )
-    )
+    );
 
     try {
       await uploadDocument({
         file: uploadFile.file,
-        onProgress: (progress) => {
-          setUploadFiles(prev => 
-            prev.map((f, i) => 
-              i === index ? { ...f, progress } : f
-            )
-          )
-        }
-      })
+        onProgress: progress => {
+          setUploadFiles(prev =>
+            prev.map((f, i) => (i === index ? { ...f, progress } : f))
+          );
+        },
+      });
 
-      setUploadFiles(prev => 
-        prev.map((f, i) => 
-          i === index ? { ...f, status: 'completed' as const, progress: 100 } : f
+      setUploadFiles(prev =>
+        prev.map((f, i) =>
+          i === index
+            ? { ...f, status: 'completed' as const, progress: 100 }
+            : f
         )
-      )
+      );
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed'
-      setUploadFiles(prev => 
-        prev.map((f, i) => 
-          i === index ? { 
-            ...f, 
-            status: 'error' as const, 
-            error: errorMessage
-          } : f
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed';
+      setUploadFiles(prev =>
+        prev.map((f, i) =>
+          i === index
+            ? {
+                ...f,
+                status: 'error' as const,
+                error: errorMessage,
+              }
+            : f
         )
-      )
+      );
     }
-  }
+  };
 
   const uploadAllFiles = async () => {
     const pendingFiles = uploadFiles
       .map((f, index) => ({ ...f, index }))
-      .filter(f => f.status === 'pending')
+      .filter(f => f.status === 'pending');
 
     for (const fileWithIndex of pendingFiles) {
-      await uploadFile(fileWithIndex, fileWithIndex.index)
+      await uploadFile(fileWithIndex, fileWithIndex.index);
     }
-  }
+  };
 
   const removeFile = (index: number) => {
-    setUploadFiles(prev => prev.filter((_, i) => i !== index))
-  }
+    setUploadFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const clearCompleted = () => {
-    setUploadFiles(prev => prev.filter(f => f.status !== 'completed'))
-  }
+    setUploadFiles(prev => prev.filter(f => f.status !== 'completed'));
+  };
 
   const handleUploadClick = () => {
-    setIsUploadDialogOpen(true)
-  }
+    setIsUploadDialogOpen(true);
+  };
 
   const handleCloseDialog = () => {
-    setIsUploadDialogOpen(false)
-    setUploadFiles([])
-  }
+    setIsUploadDialogOpen(false);
+    setUploadFiles([]);
+  };
 
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) {
-      return '🖼️'
+      return '🖼️';
     } else if (file.type.includes('pdf')) {
-      return '📄'
+      return '📄';
     } else if (file.type.includes('document') || file.type.includes('sheet')) {
-      return '📊'
+      return '📊';
     } else {
-      return '📄'
+      return '📄';
     }
-  }
+  };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
-  const completedUploads = uploadFiles.filter(f => f.status === 'completed').length
-  const totalUploads = uploadFiles.length
-  const hasUploads = uploadFiles.length > 0
-  const allCompleted = uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'completed')
+  const completedUploads = uploadFiles.filter(
+    f => f.status === 'completed'
+  ).length;
+  const totalUploads = uploadFiles.length;
+  const hasUploads = uploadFiles.length > 0;
+  const allCompleted =
+    uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'completed');
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Documents</h1>
         <p className="text-muted-foreground">
-          Upload, manage, and organize your documents with AI-powered categorization.
+          Upload, manage, and organize your documents with AI-powered
+          categorization.
         </p>
       </div>
 
@@ -179,18 +202,19 @@ export function DocumentsPage() {
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-none w-[98vw] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
               Upload Documents
             </DialogTitle>
             <DialogDescription>
-              Drag and drop files here or click to browse. Maximum file size: 10MB each.
+              Drag and drop files here or click to browse. Maximum file size:
+              10MB each.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto">
             {/* Drop Zone */}
             <div
               {...getRootProps()}
@@ -225,7 +249,9 @@ export function DocumentsPage() {
                       Upload Queue ({completedUploads}/{totalUploads})
                     </CardTitle>
                     <CardDescription>
-                      {allCompleted ? 'All uploads completed!' : 'Files ready to upload'}
+                      {allCompleted
+                        ? 'All uploads completed!'
+                        : 'Files ready to upload'}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -258,7 +284,7 @@ export function DocumentsPage() {
                       <div className="flex-shrink-0 text-2xl">
                         {getFileIcon(uploadFile.file)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium truncate">
@@ -269,19 +295,20 @@ export function DocumentsPage() {
                               uploadFile.status === 'completed'
                                 ? 'default'
                                 : uploadFile.status === 'error'
-                                ? 'destructive'
-                                : uploadFile.status === 'uploading'
-                                ? 'secondary'
-                                : 'outline'
+                                  ? 'destructive'
+                                  : uploadFile.status === 'uploading'
+                                    ? 'secondary'
+                                    : 'outline'
                             }
                           >
                             {uploadFile.status === 'completed' && '✓ Complete'}
                             {uploadFile.status === 'error' && '✗ Error'}
-                            {uploadFile.status === 'uploading' && 'Uploading...'}
+                            {uploadFile.status === 'uploading' &&
+                              'Uploading...'}
                             {uploadFile.status === 'pending' && 'Pending'}
                           </Badge>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span>{formatFileSize(uploadFile.file.size)}</span>
                           <span>•</span>
@@ -289,7 +316,10 @@ export function DocumentsPage() {
                         </div>
 
                         {uploadFile.status === 'uploading' && (
-                          <Progress value={uploadFile.progress} className="mt-2 h-1" />
+                          <Progress
+                            value={uploadFile.progress}
+                            className="mt-2 h-1"
+                          />
                         )}
 
                         {uploadFile.status === 'error' && uploadFile.error && (
@@ -325,5 +355,5 @@ export function DocumentsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
