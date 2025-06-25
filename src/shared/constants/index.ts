@@ -13,9 +13,9 @@ export const ROUTES = {
   REGISTER: '/register',
   VERIFY_EMAIL: '/verify-email',
   DASHBOARD: '/dashboard',
-  DOCUMENTS: '/documents',
-  CATEGORIES: '/categories',
-  PROFILE: '/profile',
+  DOCUMENTS: '/dashboard/documents',
+  CATEGORIES: '/dashboard/categories',
+  PROFILE: '/dashboard/profile',
 } as const;
 
 export const QUERY_KEYS = {

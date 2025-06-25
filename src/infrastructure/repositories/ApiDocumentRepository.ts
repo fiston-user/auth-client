@@ -1,4 +1,4 @@
-import type { DocumentRepository } from '../../domain/repositories/DocumentRepository';
+import type { DocumentRepository, DocumentFilterOptions } from '../../domain/repositories/DocumentRepository';
 import type { Document, DocumentListResponse, BulkCategorizationResponse } from '../../shared/types';
 import type { BulkCategorizationFormData } from '../../shared/validators';
 import { ApiClient } from '../api/ApiClient';
@@ -11,8 +11,39 @@ export class ApiDocumentRepository implements DocumentRepository {
     return response.data;
   }
 
-  async getDocuments(): Promise<DocumentListResponse> {
-    const response = await this.apiClient.get<{data: DocumentListResponse}>('/api/v1/documents');
+  async getDocuments(filters?: DocumentFilterOptions): Promise<DocumentListResponse> {
+    let url = '/api/v1/documents';
+    
+    if (filters) {
+      const params = new URLSearchParams();
+      
+      if (filters.categoryId) {
+        params.set('categoryId', filters.categoryId);
+      }
+      
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
+        params.set('categoryIds', filters.categoryIds.join(','));
+      }
+      
+      if (filters.includeSubcategories !== undefined) {
+        params.set('includeSubcategories', filters.includeSubcategories.toString());
+      }
+      
+      if (filters.isAiCategorized !== undefined) {
+        params.set('isAiCategorized', filters.isAiCategorized.toString());
+      }
+      
+      if (filters.minConfidenceScore !== undefined) {
+        params.set('minConfidenceScore', filters.minConfidenceScore.toString());
+      }
+      
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    
+    const response = await this.apiClient.get<{data: DocumentListResponse}>(url);
     return response.data;
   }
 

@@ -23,6 +23,7 @@ import {
 
 import { MAX_FILE_SIZE } from '@/shared/constants';
 import { DocumentsDataTable } from '../components/DocumentsDataTable';
+import { CategoriesPanel } from '../components/CategoriesPanel';
 import { useDocuments } from '@/application/hooks/useDocuments';
 
 interface UploadFile {
@@ -35,7 +36,21 @@ interface UploadFile {
 export function DocumentsPage() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
-  const { uploadDocument, isUploadingDocument } = useDocuments();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+  
+  const filters = selectedCategoryId ? { categoryId: selectedCategoryId } : undefined;
+  const { 
+    documents,
+    storageQuota,
+    storageUsed,
+    isLoadingDocuments,
+    downloadDocument,
+    deleteDocument,
+    isDownloadingDocument,
+    isDeletingDocument,
+    uploadDocument, 
+    isUploadingDocument 
+  } = useDocuments(filters);
 
   const onDrop = useCallback(
     (
@@ -189,8 +204,8 @@ export function DocumentsPage() {
     uploadFiles.length > 0 && uploadFiles.every(f => f.status === 'completed');
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold mb-2">Documents</h1>
         <p className="text-muted-foreground">
           Upload, manage, and organize your documents with AI-powered
@@ -198,7 +213,30 @@ export function DocumentsPage() {
         </p>
       </div>
 
-      <DocumentsDataTable onUpload={handleUploadClick} />
+      <div className="grid gap-6 lg:grid-cols-4">
+        {/* Categories Sidebar */}
+        <div className="lg:col-span-1">
+          <CategoriesPanel
+            selectedCategoryId={selectedCategoryId}
+            onCategorySelect={setSelectedCategoryId}
+          />
+        </div>
+
+        {/* Documents Table */}
+        <div className="lg:col-span-3">
+          <DocumentsDataTable 
+            onUpload={handleUploadClick}
+            documents={documents}
+            storageQuota={storageQuota}
+            storageUsed={storageUsed}
+            isLoadingDocuments={isLoadingDocuments}
+            downloadDocument={downloadDocument}
+            deleteDocument={deleteDocument}
+            isDownloadingDocument={isDownloadingDocument}
+            isDeletingDocument={isDeletingDocument}
+          />
+        </div>
+      </div>
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={handleCloseDialog}>

@@ -3,14 +3,15 @@ import toast from 'react-hot-toast';
 import { ApiDocumentRepository } from '../../infrastructure/repositories/ApiDocumentRepository';
 import { QUERY_KEYS, TOAST_DURATION } from '../../shared/constants';
 import type { ApiError } from '../../shared/types';
+import type { DocumentFilterOptions } from '../../domain/repositories/DocumentRepository';
 
 const getDocumentRepository = () => new ApiDocumentRepository();
 
-const fetchDocumentsWithCategories = async () => {
+const fetchDocumentsWithCategories = async (filters?: DocumentFilterOptions) => {
   const repository = getDocumentRepository();
   
-  // First get documents
-  const documentsData = await repository.getDocuments();
+  // First get documents with optional filters
+  const documentsData = await repository.getDocuments(filters);
   
   // Then fetch categories for each document
   const documentsWithCategories = await Promise.all(
@@ -59,7 +60,7 @@ const fetchDocumentsWithCategories = async () => {
   };
 };
 
-export const useDocuments = () => {
+export const useDocuments = (filters?: DocumentFilterOptions) => {
   const queryClient = useQueryClient();
 
   // Get all documents and storage info with categories
@@ -68,8 +69,8 @@ export const useDocuments = () => {
     isLoading: isLoadingDocuments,
     error: documentsError 
   } = useQuery({
-    queryKey: QUERY_KEYS.DOCUMENTS.LIST,
-    queryFn: fetchDocumentsWithCategories,
+    queryKey: [...QUERY_KEYS.DOCUMENTS.LIST, filters],
+    queryFn: () => fetchDocumentsWithCategories(filters),
     retry: false,
     refetchInterval: (data) => {
       // Auto-refresh every 30 seconds if there are recent documents without categories

@@ -1,9 +1,17 @@
 import type { Document, DocumentListResponse, BulkCategorizationResponse } from '../../shared/types';
 import type { BulkCategorizationFormData } from '../../shared/validators';
 
+export interface DocumentFilterOptions {
+  categoryId?: string;
+  categoryIds?: string[];
+  includeSubcategories?: boolean;
+  isAiCategorized?: boolean;
+  minConfidenceScore?: number;
+}
+
 export interface DocumentRepository {
   uploadDocument(file: File, onProgress?: (progress: number) => void): Promise<Document>;
-  getDocuments(): Promise<DocumentListResponse>;
+  getDocuments(filters?: DocumentFilterOptions): Promise<DocumentListResponse>;
   getDocument(id: string): Promise<Document>;
   deleteDocument(id: string): Promise<void>;
   downloadDocument(id: string): Promise<Blob>;

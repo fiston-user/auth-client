@@ -58,29 +58,48 @@ const getFileIcon = (mimeType: string, size: number = 16) => {
 }
 
 const getFileTypeColor = (mimeType: string) => {
-  if (mimeType.startsWith('image/')) return 'bg-green-100 text-green-800'
-  if (mimeType.includes('pdf')) return 'bg-red-100 text-red-800'
-  if (mimeType.includes('document')) return 'bg-blue-100 text-blue-800'
-  if (mimeType.includes('sheet')) return 'bg-emerald-100 text-emerald-800'
-  if (mimeType.startsWith('text/')) return 'bg-gray-100 text-gray-800'
-  return 'bg-slate-100 text-slate-800'
+  if (mimeType.startsWith('image/')) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+  if (mimeType.includes('pdf')) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+  if (mimeType.includes('document')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+  if (mimeType.includes('sheet')) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+  if (mimeType.startsWith('text/')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+  return 'bg-muted/50 text-muted-foreground'
 }
 
 interface DocumentsDataTableProps {
-  onUpload?: () => void
+  onUpload?: () => void;
+  documents?: any[];
+  storageQuota?: number;
+  storageUsed?: number;
+  isLoadingDocuments?: boolean;
+  downloadDocument?: (id: string) => void;
+  deleteDocument?: (id: string) => void;
+  isDownloadingDocument?: boolean;
+  isDeletingDocument?: boolean;
 }
 
-export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
-  const {
-    documents,
-    storageQuota,
-    storageUsed,
-    isLoadingDocuments,
-    downloadDocument,
-    deleteDocument,
-    isDownloadingDocument,
-    isDeletingDocument,
-  } = useDocuments()
+export function DocumentsDataTable({ 
+  onUpload,
+  documents: propDocuments,
+  storageQuota: propStorageQuota,
+  storageUsed: propStorageUsed,
+  isLoadingDocuments: propIsLoadingDocuments,
+  downloadDocument: propDownloadDocument,
+  deleteDocument: propDeleteDocument,
+  isDownloadingDocument: propIsDownloadingDocument,
+  isDeletingDocument: propIsDeletingDocument,
+}: DocumentsDataTableProps) {
+  // Use fallback hook if props are not provided (for backward compatibility)
+  const fallbackData = useDocuments();
+  
+  const documents = propDocuments ?? fallbackData.documents;
+  const storageQuota = propStorageQuota ?? fallbackData.storageQuota;
+  const storageUsed = propStorageUsed ?? fallbackData.storageUsed;
+  const isLoadingDocuments = propIsLoadingDocuments ?? fallbackData.isLoadingDocuments;
+  const downloadDocument = propDownloadDocument ?? fallbackData.downloadDocument;
+  const deleteDocument = propDeleteDocument ?? fallbackData.deleteDocument;
+  const isDownloadingDocument = propIsDownloadingDocument ?? fallbackData.isDownloadingDocument;
+  const isDeletingDocument = propIsDeletingDocument ?? fallbackData.isDeletingDocument;
 
   const handleDownload = (documentId: string) => {
     downloadDocument(documentId)
@@ -100,23 +119,24 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
         const doc = row.original
         return (
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 p-2 rounded-lg bg-muted/30">
               {getFileIcon(doc.mimeType, 20)}
             </div>
             <div className="min-w-0 flex-1">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="text-sm font-medium text-gray-900 truncate cursor-help">
+                    <p className="text-sm font-medium text-foreground truncate cursor-help hover:text-primary transition-colors">
                       {doc.originalFilename}
                     </p>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{doc.originalFilename}</p>
+                    <p className="font-medium">{doc.originalFilename}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Internal: {doc.filename}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <p className="text-xs text-gray-500">{doc.filename}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[200px]">{doc.filename}</p>
             </div>
           </div>
         )
@@ -142,7 +162,7 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
       cell: ({ getValue }) => {
         const size = getValue() as number
         return (
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {formatFileSize(size)}
           </span>
         )
@@ -162,54 +182,100 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
         if (categories.length === 0 && isRecent) {
           return (
             <div className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-              <span className="text-xs text-blue-600">Processing...</span>
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              <span className="text-xs text-primary">Processing...</span>
             </div>
           )
         }
         
         if (categories.length === 0) {
           return (
-            <span className="text-xs text-gray-400">No categories</span>
+            <span className="text-xs text-muted-foreground">No categories</span>
           )
         }
 
         return (
-          <div className="flex flex-wrap gap-1 max-w-48">
+          <div className="flex flex-wrap gap-1.5 max-w-52">
             {categories.slice(0, 2).map((category) => (
               <TooltipProvider key={category.id}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="text-xs cursor-help"
-                      style={{ borderColor: category.color, color: category.color }}
+                    <div
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-help transition-all hover:scale-105 border"
+                      style={{ 
+                        backgroundColor: `${category.color}15`,
+                        borderColor: `${category.color}40`,
+                        color: category.color 
+                      }}
                     >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {category.name}
+                      <div 
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="truncate max-w-[80px]">{category.name}</span>
                       {category.isAiGenerated && (
-                        <span className="ml-1 text-[10px] opacity-70">AI</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-0.5 h-3 bg-current opacity-30 rounded-full" />
+                          <span className="text-[10px] font-bold opacity-80">AI</span>
+                        </div>
                       )}
-                    </Badge>
+                    </div>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="space-y-1">
-                      <p>{category.name}</p>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span className="font-medium">{category.name}</span>
+                      </div>
                       {category.confidenceScore && (
-                        <p className="text-xs">Confidence: {category.confidenceScore}%</p>
+                        <div className="text-xs text-muted-foreground">
+                          Confidence: {category.confidenceScore}%
+                        </div>
                       )}
-                      <p className="text-xs">
-                        {category.isAiGenerated ? 'AI Generated' : 'Manual'}
-                      </p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`px-2 py-0.5 rounded-full ${
+                          category.isAiGenerated 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {category.isAiGenerated ? '🤖 AI Generated' : '👤 Manual'}
+                        </span>
+                      </div>
                     </div>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ))}
             {categories.length > 2 && (
-              <Badge variant="secondary" className="text-xs">
-                +{categories.length - 2}
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs cursor-help hover:bg-accent transition-colors"
+                    >
+                      +{categories.length - 2}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <div className="space-y-1">
+                      <p className="font-medium">Additional Categories:</p>
+                      {categories.slice(2).map((cat, index) => (
+                        <div key={cat.id} className="flex items-center gap-2 text-xs">
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: cat.color }}
+                          />
+                          <span>{cat.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         )
@@ -225,8 +291,8 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center space-x-1 cursor-help">
-                  <Calendar className="h-3 w-3 text-gray-400" />
-                  <span className="text-sm text-gray-600">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     {format(new Date(date), 'MMM dd, yyyy')}
                   </span>
                 </div>
@@ -255,9 +321,9 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
                     size="sm"
                     onClick={() => handleDownload(document.id)}
                     disabled={isDownloadingDocument}
-                    className="h-8 w-8 p-0 hover:bg-blue-50"
+                    className="h-8 w-8 p-0 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400 transition-all"
                   >
-                    <Download className="h-4 w-4 text-blue-600" />
+                    <Download className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -270,7 +336,7 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-8 w-8 p-0 hover:bg-gray-50"
+                  className="h-8 w-8 p-0 hover:bg-accent hover:text-accent-foreground transition-all"
                 >
                   <span className="sr-only">Open menu</span>
                   <MoreHorizontal className="h-4 w-4" />
@@ -297,7 +363,7 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
                 <DropdownMenuItem
                   onClick={() => handleDelete(document.id)}
                   disabled={isDeletingDocument}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
+                  className="cursor-pointer text-destructive focus:text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 transition-colors"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
@@ -319,17 +385,17 @@ export function DocumentsDataTable({ onUpload }: DocumentsDataTableProps) {
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
               </CardHeader>
               <CardContent>
-                <div className="h-6 w-16 bg-gray-200 rounded animate-pulse mb-1" />
-                <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+                <div className="h-6 w-16 bg-muted rounded animate-pulse mb-1" />
+                <div className="h-3 w-24 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
         </div>
-        <div className="h-96 bg-gray-50 rounded-lg animate-pulse" />
+        <div className="h-96 bg-muted rounded-lg animate-pulse" />
       </div>
     )
   }
