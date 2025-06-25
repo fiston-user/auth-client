@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useOutletContext } from 'react-router-dom';
 import { Upload, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,7 +24,6 @@ import {
 
 import { MAX_FILE_SIZE } from '@/shared/constants';
 import { DocumentsDataTable } from '../components/DocumentsDataTable';
-import { CategoriesPanel } from '../components/CategoriesPanel';
 import { useDocuments } from '@/application/hooks/useDocuments';
 
 interface UploadFile {
@@ -33,10 +33,15 @@ interface UploadFile {
   error?: string;
 }
 
+interface OutletContext {
+  selectedCategoryId?: string;
+  setSelectedCategoryId: (id: string | undefined) => void;
+}
+
 export function DocumentsPage() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+  const { selectedCategoryId } = useOutletContext<OutletContext>();
   
   const filters = selectedCategoryId ? { categoryId: selectedCategoryId } : undefined;
   const { 
@@ -213,30 +218,18 @@ export function DocumentsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Categories Sidebar */}
-        <div className="lg:col-span-1">
-          <CategoriesPanel
-            selectedCategoryId={selectedCategoryId}
-            onCategorySelect={setSelectedCategoryId}
-          />
-        </div>
-
-        {/* Documents Table */}
-        <div className="lg:col-span-3">
-          <DocumentsDataTable 
-            onUpload={handleUploadClick}
-            documents={documents}
-            storageQuota={storageQuota}
-            storageUsed={storageUsed}
-            isLoadingDocuments={isLoadingDocuments}
-            downloadDocument={downloadDocument}
-            deleteDocument={deleteDocument}
-            isDownloadingDocument={isDownloadingDocument}
-            isDeletingDocument={isDeletingDocument}
-          />
-        </div>
-      </div>
+      {/* Documents Table - Full Width now that sidebar is separate */}
+      <DocumentsDataTable 
+        onUpload={handleUploadClick}
+        documents={documents}
+        storageQuota={storageQuota}
+        storageUsed={storageUsed}
+        isLoadingDocuments={isLoadingDocuments}
+        downloadDocument={downloadDocument}
+        deleteDocument={deleteDocument}
+        isDownloadingDocument={isDownloadingDocument}
+        isDeletingDocument={isDeletingDocument}
+      />
 
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={handleCloseDialog}>
